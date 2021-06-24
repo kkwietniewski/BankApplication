@@ -1,0 +1,7 @@
+$body-bg: #000;
+$body-color: #111;
+$custom-control-indicator-size: 1.75rem;
+$custom-control-indicator-bg-size: 1.75rem;
+
+@import 'node_modules/bootstrap/scss/bootstrap.scss';
+@import 'node_modules/bootstrap-vue/src/index.scss';
