@@ -12,6 +12,7 @@ import Vuelidate from "vuelidate";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faBars } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import axios from "axios";
 
 library.add(faBars);
 
@@ -21,6 +22,7 @@ Vue.config.productionTip = false;
 
 const url = "http://127.0.0.1:8000";
 ApiService.init(url, `${url}/api`);
+Vue.prototype.$http = axios;
 
 Vue.use(BootstrapVue);
 Vue.use(IconsPlugin);

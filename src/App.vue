@@ -1,9 +1,9 @@
 <template>
     <v-app>
         <v-card class="mx-auto overflow-hidden" height="100%" width="100%">
-            <Navbar :isLogged="isLogged" @log-out="changeLoginStatus" />
+            <Navbar />
             <v-main>
-                <router-view @log-in="changeLoginStatus" />
+                <router-view />
             </v-main>
         </v-card>
     </v-app>
@@ -17,17 +17,5 @@ export default {
     components: {
         Navbar,
     },
-    data() {
-        return {
-            isLogged: false,
-        };
-    },
-    methods: {
-        changeLoginStatus() {
-            this.isLogged = !this.isLogged;
-        },
-    },
 };
 </script>
-
-<style scoped></style>

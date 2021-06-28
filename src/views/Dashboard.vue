@@ -1,14 +1,16 @@
 <template>
     <div>
         <v-card class="mx-auto col-md-4">
-            <v-badge inline left content="Bank Name"></v-badge>
-            <v-card-title class="text-right"> Account Name </v-card-title>
-            <v-card-subtitle> 9257-5830-9942-1524-722-8 </v-card-subtitle>
+            <v-badge inline left :content="`Bank ${account.bank}`"></v-badge>
+            <v-card-title class="text-right">
+                {{ account.login }}
+            </v-card-title>
+            <v-card-subtitle> {{ account.accountNumber }} </v-card-subtitle>
 
             <v-card-subtitle class="text-right"> Balance </v-card-subtitle>
 
             <v-card-subtitle class="text-right">
-                <h2>2,569 zł</h2>
+                <h2>{{ account.balance }} zł</h2>
             </v-card-subtitle>
 
             <v-card-actions>
@@ -19,73 +21,71 @@
                     Make transfer
                 </v-btn>
                 <v-spacer></v-spacer>
-                <v-btn color="primary" text @click="getTransactions">
-                    Show transactions
+                <v-btn color="primary" text @click="getCredits">
+                    Show credits
 
                     <v-icon>{{
-                        showTransactions ? "mdi-chevron-up" : "mdi-chevron-down"
+                        showCredits ? "mdi-chevron-up" : "mdi-chevron-down"
                     }}</v-icon>
                 </v-btn>
             </v-card-actions>
 
             <v-expand-transition>
-                <div v-show="showTransactions">
+                <div v-show="showCredits">
                     <v-list two-line>
                         <v-list-item-group
                             v-model="selected"
                             active-class="primary"
                             multiple
                         >
-                            <template
-                                v-for="(transaction, index) in transactions"
-                            >
-                                <v-list-item :key="transaction.title">
-                                    <template v-slot:default="{ active }">
+                            <template v-for="(credit, index) in credits">
+                                <v-list-item :key="credit.title">
+                                    <template>
                                         <v-list-item-content>
-                                            <v-list-item-title
-                                                v-text="transaction.title"
-                                            ></v-list-item-title>
-                                            <v-list-item-subtitle
-                                                class="text--primary"
-                                                v-text="
-                                                    transaction.transfer_date
-                                                "
-                                            ></v-list-item-subtitle>
+                                            <p>
+                                                <v-list-item-title
+                                                    ><strong
+                                                        >Credit #{{
+                                                            ++index
+                                                        }}</strong
+                                                    >
+                                                </v-list-item-title>
+                                            </p>
+                                            <p>
+                                                <v-list-item-subtitle>
+                                                    Next payment:
+                                                    <strong>{{
+                                                        credit.next_instalment_date
+                                                    }}</strong>
+                                                </v-list-item-subtitle>
 
-                                            <v-list-item-subtitle
-                                                v-text="
-                                                    transaction.from_account
-                                                "
-                                            ></v-list-item-subtitle>
+                                                <v-list-item-subtitle
+                                                    >Final payment:
+                                                    <strong>{{
+                                                        credit.final_instalment_date
+                                                    }}</strong></v-list-item-subtitle
+                                                >
+                                            </p>
                                         </v-list-item-content>
 
                                         <v-list-item-action>
                                             <v-list-item-action-text
-                                                >{{ transaction.amount }}
-                                                {{
-                                                    transaction.currency
-                                                }}</v-list-item-action-text
+                                                >{{ credit.remaining_funds }}/{{
+                                                    credit.debt
+                                                }}
+                                                zł</v-list-item-action-text
                                             >
-
-                                            <v-icon
-                                                v-if="!active"
-                                                color="grey lighten-1"
+                                            <v-list-item-action-text
+                                                >Minimal instalment:
+                                                {{ credit.minimal_instalment }}
+                                                zł</v-list-item-action-text
                                             >
-                                                mdi-star-outline
-                                            </v-icon>
-
-                                            <v-icon
-                                                v-else
-                                                color="yellow darken-3"
-                                            >
-                                                mdi-star
-                                            </v-icon>
                                         </v-list-item-action>
                                     </template>
                                 </v-list-item>
 
                                 <v-divider
-                                    v-if="index < transactions.length - 1"
+                                    v-if="index < credit.length - 1"
                                     :key="index"
                                 ></v-divider>
                             </template>
@@ -93,87 +93,64 @@
                     </v-list>
                 </div>
             </v-expand-transition>
-        </v-card>
-        <v-card class="mx-auto col-md-4 mt-4">
-            <v-badge inline left content="Bank Name"></v-badge>
-            <v-card-title class="text-right"> Account Name </v-card-title>
-            <v-card-subtitle> 9257-5830-9942-1524-722-8 </v-card-subtitle>
-
-            <v-card-subtitle class="text-right"> Balance </v-card-subtitle>
-
-            <v-card-subtitle class="text-right">
-                <h2>2,569 zł</h2>
-            </v-card-subtitle>
-
             <v-card-actions>
                 <v-spacer></v-spacer>
-                <v-btn color="primary" text @click="getTransactions">
-                    Show transactions
+                <v-btn color="primary" text @click="getTransfers">
+                    Show transfers
 
                     <v-icon>{{
-                        showTransactions ? "mdi-chevron-up" : "mdi-chevron-down"
+                        showTransfers ? "mdi-chevron-up" : "mdi-chevron-down"
                     }}</v-icon>
                 </v-btn>
             </v-card-actions>
-
             <v-expand-transition>
-                <div v-show="showTransactions">
+                <div v-show="showTransfers">
                     <v-list two-line>
                         <v-list-item-group
                             v-model="selected"
                             active-class="primary"
                             multiple
                         >
-                            <template
-                                v-for="(transaction, index) in transactions"
-                            >
-                                <v-list-item :key="transaction.title">
-                                    <template v-slot:default="{ active }">
+                            <template v-for="(transfer, index) in transfers">
+                                <v-list-item :key="transfer.title">
+                                    <template>
                                         <v-list-item-content>
-                                            <v-list-item-title
-                                                v-text="transaction.title"
-                                            ></v-list-item-title>
-                                            <v-list-item-subtitle
-                                                class="text--primary"
-                                                v-text="
-                                                    transaction.transfer_date
-                                                "
-                                            ></v-list-item-subtitle>
-
-                                            <v-list-item-subtitle
-                                                v-text="
-                                                    transaction.from_account
-                                                "
-                                            ></v-list-item-subtitle>
+                                            <p>
+                                                <v-list-item-title
+                                                    ><strong>{{
+                                                        transfer.title
+                                                    }}</strong>
+                                                </v-list-item-title>
+                                            </p>
+                                            <p>
+                                                <v-list-item-subtitle>
+                                                    <strong>{{
+                                                        transfer.receiver_id ==
+                                                        currentUser
+                                                            ? `Incoming transfer`
+                                                            : `Outcoming transfer to ${transfer.receiver_data}`
+                                                    }}</strong>
+                                                </v-list-item-subtitle>
+                                            </p>
                                         </v-list-item-content>
 
                                         <v-list-item-action>
                                             <v-list-item-action-text
-                                                >{{ transaction.amount }}
-                                                {{
-                                                    transaction.currency
-                                                }}</v-list-item-action-text
+                                                >{{
+                                                    transfer.amount
+                                                }}
+                                                zł</v-list-item-action-text
                                             >
-
-                                            <v-icon
-                                                v-if="!active"
-                                                color="grey lighten-1"
-                                            >
-                                                mdi-star-outline
-                                            </v-icon>
-
-                                            <v-icon
-                                                v-else
-                                                color="yellow darken-3"
-                                            >
-                                                mdi-star
-                                            </v-icon>
+                                            <v-list-item-action-text
+                                                >Transfer date:
+                                                {{ transfer.transfer_date }}
+                                            </v-list-item-action-text>
                                         </v-list-item-action>
                                     </template>
                                 </v-list-item>
 
                                 <v-divider
-                                    v-if="index < transactions.length - 1"
+                                    v-if="index < transfer.length - 1"
                                     :key="index"
                                 ></v-divider>
                             </template>
@@ -190,31 +167,56 @@ import useAccounts from "../modules/accounts";
 export default {
     data() {
         return {
-            showTransactions: false,
-            selected: [1],
-            transactions: [
+            showCredits: false,
+            showTransfers: false,
+            selected: [],
+            credits: [
                 {
-                    header: "Transactions",
+                    header: "Credits",
                 },
                 {
                     divider: false,
                 },
             ],
+            transfers: [
+                {
+                    header: "Transfers",
+                },
+                {
+                    divider: false,
+                },
+            ],
+            currentUser: localStorage.getItem("current-user"),
         };
     },
     setup() {
-        const { getAllTransactions } = useAccounts();
+        const { getAllTransfers, getById, account, getAccountCredits } =
+            useAccounts();
 
-        const getTransactions = function () {
-            this.showTransactions = !this.showTransactions;
-            getAllTransactions(28).then((response) => {
-                this.transactions = response.data.data;
+        const getTransfers = function () {
+            this.showTransfers = !this.showTransfers;
+            getAllTransfers(this.currentUser).then((response) => {
+                this.transfers = response.data.data;
                 console.log(response.data.data);
             }); //TODO user id
         };
 
+        const getAccount = function () {
+            getById(localStorage.getItem("current-user"));
+        };
+        getAccount();
+
+        const getCredits = function () {
+            this.showCredits = !this.showCredits;
+            getAccountCredits(this.currentUser).then((response) => {
+                this.credits = response.data.data;
+            });
+        };
         return {
-            getTransactions,
+            getTransfers,
+            getAccount,
+            account,
+            getCredits,
         };
     },
 };
