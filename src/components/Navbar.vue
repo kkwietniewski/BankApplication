@@ -6,7 +6,7 @@
                 @click.stop="drawer = !drawer"
             ></v-app-bar-nav-icon>
 
-            <v-toolbar-title> {{ $route.name }} {{ isAdmin }} </v-toolbar-title>
+            <v-toolbar-title> {{ $route.name }} </v-toolbar-title>
 
             <v-spacer></v-spacer>
 
@@ -32,12 +32,12 @@
                             </v-list-item-avatar>
 
                             <v-list-item-content>
-                                <v-list-item-title
-                                    >John Leider</v-list-item-title
-                                >
-                                <v-list-item-subtitle
-                                    >User</v-list-item-subtitle
-                                >
+                                <v-list-item-title>{{
+                                    user == "" ? "543211" : user
+                                }}</v-list-item-title>
+                                <v-list-item-subtitle>{{
+                                    isAdmin ? "Admin" : "User"
+                                }}</v-list-item-subtitle>
                             </v-list-item-content>
                         </v-list-item>
                     </v-list>
@@ -240,7 +240,9 @@
 
                         <v-list-item-content>
                             <v-list-item-title>{{
-                                item.title
+                                item.title == "Admin" && isAdmin == 0
+                                    ? ""
+                                    : item.title
                             }}</v-list-item-title>
                         </v-list-item-content>
                     </v-list-item>
@@ -292,6 +294,7 @@ export default {
             },
             updateMessage: "",
             isAdmin: localStorage.getItem("is-admin"),
+            user: "",
         };
     },
     computed: {
@@ -423,17 +426,17 @@ export default {
         },
     },
     setup() {
-        const { updateAccountPassword, checkIsAdmin } = useAccounts();
+        const { updateUser, getUserById } = useAccounts();
 
         const updatePassword = function (data) {
             if (data == this.form.password) {
-                updateAccountPassword(localStorage.getItem("current-user"), {
+                updateUser(localStorage.getItem("current-user"), {
                     password: data,
                 }).then((response) => {
                     this.updateMessage = response.data.message;
                 });
             } else {
-                updateAccountPassword(localStorage.getItem("current-user"), {
+                updateUser(localStorage.getItem("current-user"), {
                     pin: data,
                 }).then((response) => {
                     this.updateMessage = response.data.message;
@@ -442,12 +445,13 @@ export default {
         };
 
         const checkAdmin = function () {
-            checkIsAdmin(localStorage.getItem("current-user")).then(
+            getUserById(localStorage.getItem("current-user")).then(
                 (response) => {
                     localStorage.setItem(
                         "is-admin",
                         response.data.data.is_admin
                     );
+                    this.user = response.data.data.login;
                 }
             );
         };

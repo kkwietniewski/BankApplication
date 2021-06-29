@@ -1,241 +1,324 @@
 <template>
-    <v-card class="mx-auto col-md-4">
-        <v-badge inline :content="`Bank ${account.bank}`"></v-badge>
-        <v-card-title class="text-right">
-            {{ account.login }}
-            <v-spacer></v-spacer>
-            <v-card-subtitle class="text-right"> Balance: </v-card-subtitle>
-            {{ account.balance }}
-        </v-card-title>
-        <v-card-subtitle> {{ account.accountNumber }} </v-card-subtitle>
-
-        <form @submit.prevent="onSubmit">
-            <v-text-field
-                label="Account Number*"
-                prepend-icon="mdi-account"
-                type="number"
-                v-model.trim="$v.form.account_number.$model"
-                :error-messages="accountNumberErrors"
-                :counter="16"
-                required
-                @input="$v.form.account_number.$touch()"
-                @blur="$v.form.account_number.$touch()"
-            ></v-text-field>
-            <v-text-field
-                label="Title*"
-                prepend-icon="mdi-lead-pencil"
-                v-model.trim="$v.form.title.$model"
-                :error-messages="titleErrors"
-                :counter="40"
-                required
-                @input="$v.form.title.$touch()"
-                @blur="$v.form.title.$touch()"
-            ></v-text-field>
-            <v-text-field
-                label="Address (optional)"
-                prepend-icon="mdi-map-marker"
-                v-model.trim="$v.form.receiver_address.$model"
-                @input="$v.form.receiver_address.$touch()"
-                @blur="$v.form.receiver_address.$touch()"
-            ></v-text-field>
-            <v-text-field
-                label="Amount*"
-                prepend-icon="mdi-currency-usd"
-                v-model.trim="$v.form.amount.$model"
-                :error-messages="amountErrors"
-                required
-                @input="$v.form.amount.$touch()"
-                @blur="$v.form.amount.$touch()"
-            ></v-text-field>
-            <v-menu
-                v-model="isDatePicker"
-                :close-on-content-click="false"
-                :nudge-right="40"
-                transition="scale-transition"
-                offset-y
-                min-width="auto"
-            >
-                <template v-slot:activator="{ on, attrs }">
+    <div>
+        <v-card class="mx-auto col-md-4">
+            <v-card-title v-if="!showDialog" class="text-right">
+                Admin panel
+                <v-spacer></v-spacer>
+                <v-card-subtitle>
+                    Choose user to edit or check transfers</v-card-subtitle
+                >
+            </v-card-title>
+            <v-card v-if="showDialog" class="menu-container">
+                <v-card-title v-if="isSending">{{
+                    updateMessage
+                }}</v-card-title>
+                <v-card-actions class="justify-end">
+                    <v-btn
+                        text
+                        @click="
+                            showDialog = false;
+                            isCreateClicked = false;
+                            createClear();
+                        "
+                    >
+                        <v-icon>mdi-close</v-icon>
+                    </v-btn>
+                </v-card-actions>
+                <form
+                    @submit.prevent="
+                        isCreateClicked
+                            ? _createUser()
+                            : editUser(editedUser.id)
+                    "
+                >
                     <v-text-field
-                        label="Date*"
-                        prepend-icon="mdi-calendar"
-                        v-model.trim="$v.form.transfer_date.$model"
-                        :error-messages="dateErrors"
-                        required
-                        readonly
-                        @input="$v.form.transfer_date.$touch()"
-                        @blur="$v.form.transfer_date.$touch()"
-                        v-bind="attrs"
-                        v-on="on"
+                        label="Login"
+                        prepend-icon="mdi-account"
+                        type="number"
+                        v-model.trim="form.login"
+                        :counter="6"
                     ></v-text-field>
-                </template>
-                <v-date-picker
-                    v-model.trim="$v.form.transfer_date.$model"
-                    @input="isDatePicker = false"
-                ></v-date-picker>
-            </v-menu>
+                    <v-text-field
+                        label="Pasword"
+                        prepend-icon="mdi-lead-pencil"
+                        v-model.trim="form.password"
+                        :counter="25"
+                    ></v-text-field>
+                    <v-text-field
+                        label="Pin"
+                        prepend-icon="mdi-lock"
+                        v-model.trim="form.pin"
+                    ></v-text-field>
 
-            <v-btn type="submit" class="mr-4" :disabled="this.isDisabled">
-                Send
-                <v-progress-circular
-                    v-if="isSending"
-                    :size="20"
-                    indeterminate
-                    color="light-green darken-1"
-                    class="ml-2"
-                ></v-progress-circular>
-            </v-btn>
-            <v-btn @click="clear"> clear </v-btn>
-        </form>
-    </v-card>
+                    <v-btn type="submit" class="mr-4">
+                        {{ isCreateClicked ? "Create user" : "Edit user" }}
+                        <v-progress-circular
+                            v-if="isSending"
+                            :size="20"
+                            indeterminate
+                            color="light-green darken-1"
+                            class="ml-2"
+                        ></v-progress-circular>
+                    </v-btn>
+                    <v-btn @click="clear"> clear </v-btn>
+                </form>
+            </v-card>
+            <v-card-actions>
+                <v-btn color="primary" text @click="getUsers">
+                    Show All Users
+
+                    <v-icon>{{
+                        showUsers ? "mdi-chevron-up" : "mdi-chevron-down"
+                    }}</v-icon>
+                </v-btn>
+                <v-spacer></v-spacer>
+                <v-btn color="primary" text @click="getTransfers">
+                    Show All Transfers
+
+                    <v-icon>{{
+                        showTransfers ? "mdi-chevron-up" : "mdi-chevron-down"
+                    }}</v-icon>
+                </v-btn>
+            </v-card-actions>
+            <v-expand-transition>
+                <div v-show="showTransfers">
+                    <v-list two-line>
+                        <v-list-item-group
+                            v-model="selected"
+                            active-class="primary"
+                            multiple
+                        >
+                            <template v-for="(transfer, index) in transfers">
+                                <v-list-item :key="transfer.title">
+                                    <template>
+                                        <v-list-item-content>
+                                            <p>
+                                                <v-list-item-title
+                                                    ><strong>{{
+                                                        transfer.title
+                                                    }}</strong>
+                                                </v-list-item-title>
+                                            </p>
+                                            <p>
+                                                <v-list-item-subtitle>
+                                                    <strong
+                                                        >Transfered to:
+                                                        {{
+                                                            transfer.receiver_data
+                                                        }},
+                                                        {{
+                                                            transfer.receiver_address
+                                                        }}</strong
+                                                    >
+                                                </v-list-item-subtitle>
+                                            </p>
+                                        </v-list-item-content>
+
+                                        <v-list-item-action>
+                                            <v-list-item-action-text
+                                                >{{
+                                                    transfer.amount
+                                                }}
+                                                zł</v-list-item-action-text
+                                            >
+                                            <v-list-item-action-text
+                                                >Transfer date:
+                                                {{ transfer.transfer_date }}
+                                            </v-list-item-action-text>
+                                        </v-list-item-action>
+                                    </template>
+                                </v-list-item>
+
+                                <v-divider
+                                    v-if="index < transfer.length - 1"
+                                    :key="index"
+                                ></v-divider>
+                            </template>
+                        </v-list-item-group>
+                    </v-list>
+                </div>
+            </v-expand-transition>
+            <v-expand-transition>
+                <div v-show="showUsers">
+                    <v-list two-line>
+                        <v-list-item-group
+                            v-model="selected"
+                            active-class="primary"
+                            multiple
+                        >
+                            <template v-for="(user, index) in users">
+                                <v-list-item :key="user.login">
+                                    <template>
+                                        <v-list-item-content>
+                                            <v-list-item-title
+                                                v-text="user.login"
+                                            ></v-list-item-title>
+
+                                            <v-list-item-subtitle
+                                                >Created at:
+                                                {{
+                                                    user.created_at
+                                                }}</v-list-item-subtitle
+                                            >
+                                        </v-list-item-content>
+                                        <v-list-item-action>
+                                            <div class="d-flex">
+                                                <v-btn
+                                                    @click="
+                                                        showDialog = true;
+                                                        prepareEdit(user);
+                                                    "
+                                                >
+                                                    <v-icon>mdi-pencil</v-icon>
+                                                </v-btn>
+
+                                                <v-spacer></v-spacer>
+                                                <v-btn
+                                                    @click="
+                                                        _deleteUser(user.id)
+                                                    "
+                                                >
+                                                    <v-icon>mdi-delete</v-icon>
+                                                </v-btn>
+                                            </div>
+                                        </v-list-item-action>
+                                    </template>
+                                </v-list-item>
+
+                                <v-divider
+                                    v-if="index < user.length - 1"
+                                    :key="index"
+                                ></v-divider>
+                            </template>
+                        </v-list-item-group>
+                    </v-list>
+                    <v-btn
+                        @click="
+                            showDialog = true;
+                            isCreateClicked = true;
+                            createClear();
+                        "
+                    >
+                        Create user
+                    </v-btn>
+                </div>
+            </v-expand-transition>
+        </v-card>
+    </div>
 </template>
 
 <script>
-import {
-    required,
-    numeric,
-    minLength,
-    maxLength,
-} from "vuelidate/lib/validators";
 import useAccounts from "../modules/accounts";
 export default {
-    name: "NewTransfer",
     data() {
         return {
+            isCreateClicked: false,
+            showUsers: false,
+            showTransfers: false,
+            showDialog: false,
+            editedUser: {},
+            selected: [],
+            users: [
+                {
+                    header: "Users",
+                },
+                {
+                    divider: false,
+                },
+            ],
+            transfers: [
+                {
+                    header: "Transfers",
+                },
+                {
+                    divider: false,
+                },
+            ],
+            currentUser: localStorage.getItem("current-user"),
             form: {
-                account_number: "",
-                title: "",
-                receiver_address: "",
-                amount: "",
-                transfer_date: new Date(
-                    Date.now() - new Date().getTimezoneOffset() * 60000
-                )
-                    .toISOString()
-                    .substr(0, 10),
+                login: "",
+                password: "",
+                pin: "",
             },
             isSending: false,
-            isDatePicker: false,
+            updateMessage: "",
         };
-    },
-    computed: {
-        isDisabled() {
-            return this.$v.$invalid;
-        },
-        accountNumberErrors() {
-            const errors = [];
-            if (!this.$v.form.account_number.$dirty) return errors;
-            !this.$v.form.account_number.required &&
-                errors.push("Field is required.");
-            !this.$v.form.account_number.numeric &&
-                errors.push("Field must be numeric.");
-            !this.$v.form.account_number.maxLength &&
-                errors.push(`You must not have greater then
-                                ${this.$v.form.account_number.$params.maxLength.max}
-                                digits.`);
-            !this.$v.form.account_number.minLength &&
-                errors.push(`You must not have at least
-                                ${this.$v.form.account_number.$params.minLength.min}
-                                digits.`);
-            return errors;
-        },
-        titleErrors() {
-            const errors = [];
-            if (!this.$v.form.title.$dirty) return errors;
-            !this.$v.form.title.required && errors.push("Field is required.");
-            !this.$v.form.title.maxLength &&
-                errors.push(`You must not have greater then
-                                ${this.$v.form.title.$params.maxLength.max}
-                                letters.`);
-            !this.$v.form.title.minLength &&
-                errors.push(`You must not have at least
-                                ${this.$v.form.title.$params.minLength.min}
-                                letters.`);
-            return errors;
-        },
-        amountErrors() {
-            const errors = [];
-            if (!this.$v.form.amount.$dirty) return errors;
-            !this.$v.form.amount.required && errors.push("Field is required.");
-            !this.$v.form.amount.numeric &&
-                errors.push("Field must be numeric.");
-            !this.$v.form.amount.maxLength &&
-                errors.push(`You must not have greater then
-                                ${this.$v.form.title.$params.maxLength.max}
-                                digits.`);
-            !this.$v.form.amount.minLength &&
-                errors.push(`You must not have at least
-                                ${this.$v.form.title.$params.minLength.min}
-                                digits.`);
-            return errors;
-        },
-        dateErrors() {
-            const errors = [];
-            if (!this.$v.form.transfer_date.$dirty) return errors;
-            !this.$v.form.transfer_date.required &&
-                errors.push("Field is required.");
-            !this.$v.form.transfer_date.minValue &&
-                errors.push("Date cannot be in the past.");
-            return errors;
-        },
-    },
-    validations: {
-        form: {
-            account_number: {
-                required,
-                numeric,
-                minLength: minLength(16),
-                maxLength: maxLength(16),
-            },
-            title: {
-                required,
-                minLength: minLength(3),
-                maxLength: maxLength(40),
-            },
-            receiver_address: {},
-            amount: {
-                required,
-                numeric,
-                minLength: minLength(1),
-                maxLength: maxLength(20),
-            },
-            transfer_date: {
-                required,
-                minValue: (value) => value > new Date().toISOString(),
-            },
-        },
     },
     methods: {
         clear() {
-            this.$v.$reset();
             this.form.login = "";
             this.form.password = "";
+            this.form.pin = "";
+        },
+        createClear() {
+            this.form.login = "";
+            this.form.password = "";
+            this.form.pin = "";
+            this.editedUser = {};
+        },
+        prepareEdit(user) {
+            this.editedUser = user;
+            this.form.login = user.login;
+        },
+        showSuccess(response) {
+            this.isSending = true;
+            this.updateMessage = response;
+            setTimeout(() => {
+                this.isSending = false;
+                this.updateMessage = "";
+                this.showDialog = !this.showDialog;
+            }, 2000);
         },
     },
     setup() {
-        const { createAccountTransfer, getById, account } = useAccounts();
+        const {
+            getAdminTransfers,
+            getAllUsers,
+            updateUser,
+            createUser,
+            deleteUser,
+        } = useAccounts();
 
-        const onSubmit = function () {
-            this.isSending = true;
-            this.$v.$touch();
-            if (this.$v.$pendding || this.$v.$error) {
-                return;
-            }
-            console.log(this.form);
-            createAccountTransfer(this.form).then((response) => {
-                console.log(response.data.message);
+        const getTransfers = function () {
+            this.showTransfers = !this.showTransfers;
+            this.showUsers = false;
+            getAdminTransfers().then((response) => {
+                this.transfers = response.data.data;
+                console.log(response.data.data);
             });
-
-            // this.$router.push({ name: "Dashboard" }); // TODO Authorization, edit this
-            // this.$emit("sended");
         };
-        const getAccount = function () {
-            getById(localStorage.getItem("current-user"));
+        const getUsers = function () {
+            this.showUsers = !this.showUsers;
+            this.showTransfers = false;
+            getAllUsers().then((response) => {
+                this.users = response.data.data;
+                console.log(response.data.data);
+            });
         };
-        getAccount();
-
+        const editUser = function (id) {
+            updateUser(id, this.form).then((response) => {
+                this.showSuccess(response.data.message);
+            });
+        };
+        const _createUser = function () {
+            createUser(this.form).then((response) => {
+                this.showSuccess(response.data.message);
+                this.showUsers = !this.showUsers;
+                this.getUsers();
+            });
+        };
+        const _deleteUser = function (id) {
+            deleteUser(id).then(() => {
+                this.showUsers = !this.showUsers;
+                this.getUsers();
+            });
+        };
         return {
-            onSubmit,
-            account,
+            getTransfers,
+            getUsers,
+            editUser,
+            _createUser,
+            _deleteUser,
         };
     },
 };

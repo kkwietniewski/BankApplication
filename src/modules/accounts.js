@@ -39,9 +39,9 @@ export default function useAccounts() {
             console.log(e);
         }
     };
-    const updateAccountPassword = async (id, data) => {
+    const updateUser = async (id, data) => {
         try {
-            return await accountServices.updateAccountPassword(id, data);
+            return await accountServices.updateUser(id, data);
         } catch (e) {
             console.log(e);
         }
@@ -53,9 +53,37 @@ export default function useAccounts() {
             console.log(e);
         }
     };
-    const checkIsAdmin = async (id) => {
+    const getUserById = async (id) => {
         try {
-            return await accountServices.checkIsAdmin(id);
+            return await accountServices.getUserById(id);
+        } catch (e) {
+            console.log(e);
+        }
+    };
+    const getAllUsers = async () => {
+        try {
+            return await accountServices.getAllUsers();
+        } catch (e) {
+            console.log(e);
+        }
+    };
+    const getAdminTransfers = async () => {
+        try {
+            return await accountServices.getAdminTransfers();
+        } catch (e) {
+            console.log(e);
+        }
+    };
+    const createUser = async (data) => {
+        try {
+            return await accountServices.createUser(data);
+        } catch (e) {
+            console.log(e);
+        }
+    };
+    const deleteUser = async (id) => {
+        try {
+            return await accountServices.deleteUser(id);
         } catch (e) {
             console.log(e);
         }
@@ -66,8 +94,12 @@ export default function useAccounts() {
         getById,
         account,
         getAccountCredits,
-        updateAccountPassword,
+        updateUser,
         createAccountTransfer,
-        checkIsAdmin,
+        getUserById,
+        getAllUsers,
+        getAdminTransfers,
+        createUser,
+        deleteUser,
     };
 }

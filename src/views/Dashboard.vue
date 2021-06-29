@@ -128,7 +128,7 @@
                                                         transfer.receiver_id ==
                                                         currentUser
                                                             ? `Incoming transfer`
-                                                            : `Outcoming transfer to ${transfer.receiver_data}`
+                                                            : `Outcoming transfer to ${transfer.receiver_data}, ${transfer.receiver_address}`
                                                     }}</strong>
                                                 </v-list-item-subtitle>
                                             </p>

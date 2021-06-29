@@ -15,7 +15,7 @@ export default {
             ApiService.get
         );
     },
-    updateAccountPassword(id, data) {
+    updateUser(id, data) {
         return ApiService.authRequest(`/users/${id}`, ApiService.put, data);
     },
     login(data) {
@@ -30,10 +30,19 @@ export default {
     createAccountTransfer(data) {
         return ApiService.authRequest(`transfers`, ApiService.post, data);
     },
-    checkIsAdmin(id) {
+    getUserById(id) {
         return ApiService.authRequest(`users/${id}`, ApiService.get);
     },
-    delete(id) {
-        return ApiService.authRequest(`/accounts/${id}`, ApiService.delete);
+    getAllUsers() {
+        return ApiService.authRequest(`users`, ApiService.get);
+    },
+    getAdminTransfers() {
+        return ApiService.authRequest(`transfers`, ApiService.get);
+    },
+    createUser(data) {
+        return ApiService.authRequest(`users`, ApiService.post, data);
+    },
+    deleteUser(id) {
+        return ApiService.authRequest(`/users/${id}`, ApiService.delete);
     },
 };

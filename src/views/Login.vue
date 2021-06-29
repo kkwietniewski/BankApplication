@@ -148,7 +148,7 @@ export default {
                     "Bearer " + localStorage.getItem("user-token");
                 this.message = response.data.message;
                 localStorage.setItem("current-user", response.data.user_id);
-                setTimeout(this.redirect, 100);
+                setTimeout(this.redirect, 1000);
             });
         };
 

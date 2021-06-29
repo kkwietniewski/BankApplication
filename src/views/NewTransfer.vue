@@ -94,6 +94,7 @@
 import {
     required,
     numeric,
+    decimal,
     minLength,
     maxLength,
 } from "vuelidate/lib/validators";
@@ -156,8 +157,8 @@ export default {
             const errors = [];
             if (!this.$v.form.amount.$dirty) return errors;
             !this.$v.form.amount.required && errors.push("Field is required.");
-            !this.$v.form.amount.numeric &&
-                errors.push("Field must be numeric.");
+            !this.$v.form.amount.decimal &&
+                errors.push("Field must be decimal.");
             !this.$v.form.amount.maxLength &&
                 errors.push(`You must not have greater then
                                 ${this.$v.form.title.$params.maxLength.max}
@@ -194,7 +195,7 @@ export default {
             receiver_address: {},
             amount: {
                 required,
-                numeric,
+                decimal,
                 minLength: minLength(1),
                 maxLength: maxLength(20),
             },
@@ -207,8 +208,10 @@ export default {
     methods: {
         clear() {
             this.$v.$reset();
-            this.form.login = "";
-            this.form.password = "";
+            this.form.account_number = "";
+            this.form.title = "";
+            this.form.receiver_address = "";
+            this.form.amount = "";
         },
     },
     setup() {
@@ -224,9 +227,7 @@ export default {
             createAccountTransfer(this.form).then((response) => {
                 console.log(response.data.message);
             });
-
-            // this.$router.push({ name: "Dashboard" }); // TODO Authorization, edit this
-            // this.$emit("sended");
+            this.$router.push({ name: "Dashboard" });
         };
         const getAccount = function () {
             getById(localStorage.getItem("current-user"));
