@@ -1,23 +1,28 @@
 <template>
     <v-card class="mx-auto col-md-4">
-        <v-badge inline content="Bank Name"></v-badge>
-        <v-card-title class="text-right"> Account Name </v-card-title>
-        <v-card-subtitle> 9257-5830-9942-1524-722-8 </v-card-subtitle>
+        <v-badge inline :content="`Bank ${account.bank}`"></v-badge>
+        <v-card-title class="text-right">
+            {{ account.login }}
+            <v-spacer></v-spacer>
+            <v-card-subtitle class="text-right"> Balance: </v-card-subtitle>
+            {{ account.balance }}
+        </v-card-title>
+        <v-card-subtitle> {{ account.accountNumber }} </v-card-subtitle>
 
         <form @submit.prevent="onSubmit">
             <v-text-field
-                label="Account Number"
+                label="Account Number*"
                 prepend-icon="mdi-account"
                 type="number"
-                v-model.trim="$v.form.accountNumber.$model"
+                v-model.trim="$v.form.account_number.$model"
                 :error-messages="accountNumberErrors"
-                :counter="20"
+                :counter="16"
                 required
-                @input="$v.form.accountNumber.$touch()"
-                @blur="$v.form.accountNumber.$touch()"
+                @input="$v.form.account_number.$touch()"
+                @blur="$v.form.account_number.$touch()"
             ></v-text-field>
             <v-text-field
-                label="Title"
+                label="Title*"
                 prepend-icon="mdi-lead-pencil"
                 v-model.trim="$v.form.title.$model"
                 :error-messages="titleErrors"
@@ -29,12 +34,12 @@
             <v-text-field
                 label="Address (optional)"
                 prepend-icon="mdi-map-marker"
-                v-model.trim="$v.form.address.$model"
-                @input="$v.form.address.$touch()"
-                @blur="$v.form.address.$touch()"
+                v-model.trim="$v.form.receiver_address.$model"
+                @input="$v.form.receiver_address.$touch()"
+                @blur="$v.form.receiver_address.$touch()"
             ></v-text-field>
             <v-text-field
-                label="Amount"
+                label="Amount*"
                 prepend-icon="mdi-currency-usd"
                 v-model.trim="$v.form.amount.$model"
                 :error-messages="amountErrors"
@@ -52,20 +57,20 @@
             >
                 <template v-slot:activator="{ on, attrs }">
                     <v-text-field
-                        label="Date"
+                        label="Date*"
                         prepend-icon="mdi-calendar"
-                        v-model.trim="$v.form.date.$model"
+                        v-model.trim="$v.form.transfer_date.$model"
                         :error-messages="dateErrors"
                         required
                         readonly
-                        @input="$v.form.date.$touch()"
-                        @blur="$v.form.date.$touch()"
+                        @input="$v.form.transfer_date.$touch()"
+                        @blur="$v.form.transfer_date.$touch()"
                         v-bind="attrs"
                         v-on="on"
                     ></v-text-field>
                 </template>
                 <v-date-picker
-                    v-model.trim="$v.form.date.$model"
+                    v-model.trim="$v.form.transfer_date.$model"
                     @input="isDatePicker = false"
                 ></v-date-picker>
             </v-menu>
@@ -89,6 +94,7 @@
 import {
     required,
     numeric,
+    decimal,
     minLength,
     maxLength,
 } from "vuelidate/lib/validators";
@@ -98,11 +104,11 @@ export default {
     data() {
         return {
             form: {
-                accountNumber: "",
+                account_number: "",
                 title: "",
-                address: "",
+                receiver_address: "",
                 amount: "",
-                date: new Date(
+                transfer_date: new Date(
                     Date.now() - new Date().getTimezoneOffset() * 60000
                 )
                     .toISOString()
@@ -118,18 +124,18 @@ export default {
         },
         accountNumberErrors() {
             const errors = [];
-            if (!this.$v.form.accountNumber.$dirty) return errors;
-            !this.$v.form.accountNumber.required &&
+            if (!this.$v.form.account_number.$dirty) return errors;
+            !this.$v.form.account_number.required &&
                 errors.push("Field is required.");
-            !this.$v.form.accountNumber.numeric &&
+            !this.$v.form.account_number.numeric &&
                 errors.push("Field must be numeric.");
-            !this.$v.form.accountNumber.maxLength &&
+            !this.$v.form.account_number.maxLength &&
                 errors.push(`You must not have greater then
-                                ${this.$v.form.accountNumber.$params.maxLength.max}
+                                ${this.$v.form.account_number.$params.maxLength.max}
                                 digits.`);
-            !this.$v.form.accountNumber.minLength &&
+            !this.$v.form.account_number.minLength &&
                 errors.push(`You must not have at least
-                                ${this.$v.form.accountNumber.$params.minLength.min}
+                                ${this.$v.form.account_number.$params.minLength.min}
                                 digits.`);
             return errors;
         },
@@ -151,8 +157,8 @@ export default {
             const errors = [];
             if (!this.$v.form.amount.$dirty) return errors;
             !this.$v.form.amount.required && errors.push("Field is required.");
-            !this.$v.form.amount.numeric &&
-                errors.push("Field must be numeric.");
+            !this.$v.form.amount.decimal &&
+                errors.push("Field must be decimal.");
             !this.$v.form.amount.maxLength &&
                 errors.push(`You must not have greater then
                                 ${this.$v.form.title.$params.maxLength.max}
@@ -165,34 +171,35 @@ export default {
         },
         dateErrors() {
             const errors = [];
-            if (!this.$v.form.date.$dirty) return errors;
-            !this.$v.form.date.required && errors.push("Field is required.");
-            !this.$v.form.date.minValue &&
+            if (!this.$v.form.transfer_date.$dirty) return errors;
+            !this.$v.form.transfer_date.required &&
+                errors.push("Field is required.");
+            !this.$v.form.transfer_date.minValue &&
                 errors.push("Date cannot be in the past.");
             return errors;
         },
     },
     validations: {
         form: {
-            accountNumber: {
+            account_number: {
                 required,
                 numeric,
-                minLength: minLength(20),
-                maxLength: maxLength(20),
+                minLength: minLength(16),
+                maxLength: maxLength(16),
             },
             title: {
                 required,
                 minLength: minLength(3),
                 maxLength: maxLength(40),
             },
-            address: {},
+            receiver_address: {},
             amount: {
                 required,
-                numeric,
+                decimal,
                 minLength: minLength(1),
                 maxLength: maxLength(20),
             },
-            date: {
+            transfer_date: {
                 required,
                 minValue: (value) => value > new Date().toISOString(),
             },
@@ -201,12 +208,14 @@ export default {
     methods: {
         clear() {
             this.$v.$reset();
-            this.form.login = "";
-            this.form.password = "";
+            this.form.account_number = "";
+            this.form.title = "";
+            this.form.receiver_address = "";
+            this.form.amount = "";
         },
     },
     setup() {
-        const { loginAccount } = useAccounts(); // TODO Transactions add method
+        const { createAccountTransfer, getById, account } = useAccounts();
 
         const onSubmit = function () {
             this.isSending = true;
@@ -215,16 +224,19 @@ export default {
                 return;
             }
             console.log(this.form);
-            loginAccount(this.form).then((response) => {
-                // TODO addTransaction
-                console.log(response.token);
+            createAccountTransfer(this.form).then((response) => {
+                console.log(response.data.message);
             });
-            this.$router.push({ name: "Dashboard" }); // TODO Authorization, edit this
-            this.$emit("sended");
+            this.$router.push({ name: "Dashboard" });
         };
+        const getAccount = function () {
+            getById(localStorage.getItem("current-user"));
+        };
+        getAccount();
 
         return {
             onSubmit,
+            account,
         };
     },
 };

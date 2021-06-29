@@ -3,6 +3,7 @@ import VueRouter from "vue-router";
 import Login from "../views/Login.vue";
 import Dashboard from "../views/Dashboard.vue";
 import NewTransfer from "../views/NewTransfer.vue";
+import Admin from "../views/Admin.vue";
 
 Vue.use(VueRouter);
 
@@ -21,6 +22,11 @@ const routes = [
         path: "/new-transfer",
         name: "New Transfer",
         component: NewTransfer,
+    },
+    {
+        path: "/admin",
+        name: "Admin",
+        component: Admin,
     },
 ];
 

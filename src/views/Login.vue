@@ -2,6 +2,11 @@
     <div class="row">
         <div class="col-md-4"></div>
         <div class="col-md-4">
+            <v-card v-if="message" class="mx-auto col-md-4">
+                <v-card-subtitle
+                    ><h5 class="text-center">{{ message }}</h5></v-card-subtitle
+                >
+            </v-card>
             <form @submit.prevent="onSubmit">
                 <v-text-field
                     label="Login"
@@ -17,6 +22,7 @@
                 <v-text-field
                     label="Password"
                     prepend-icon="mdi-lock"
+                    type="password"
                     v-model.trim="$v.form.password.$model"
                     :error-messages="passwordErrors"
                     :counter="25"
@@ -59,6 +65,7 @@ export default {
                 password: "",
             },
             isLogging: false,
+            message: "",
         };
     },
     computed: {
@@ -121,10 +128,13 @@ export default {
         validationStatus(validation) {
             return typeof validation != "undefined" ? validation.$error : false;
         },
+        redirect() {
+            this.$router.push({ name: "Dashboard" });
+            this.$emit("log-in");
+        },
     },
     setup() {
         const { loginAccount } = useAccounts();
-
         const onSubmit = function () {
             this.isLogging = true;
             this.$v.$touch();
@@ -133,10 +143,13 @@ export default {
             }
             console.log(this.form);
             loginAccount(this.form).then((response) => {
-                console.log(response.token);
+                localStorage.setItem("user-token", response.data.token);
+                this.$http.defaults.headers.common["Authorization"] =
+                    "Bearer " + localStorage.getItem("user-token");
+                this.message = response.data.message;
+                localStorage.setItem("current-user", response.data.user_id);
+                setTimeout(this.redirect, 1000);
             });
-            this.$router.push({ name: "Dashboard" }); // TODO Authorization, edit this
-            this.$emit("log-in");
         };
 
         return {
